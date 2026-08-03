@@ -1,0 +1,897 @@
+#+TITLE: Emacs Config
+#+AUTOR: Gabriele Baldi
+#+STARTUP: overview
+#+OPTION: toc:2
+
+* Startup
+#+begin_src emacs-lisp
+  (setq os-packages-path "~/.config/emacs/")
+  (setq vc-follow-symlinks t)
+  (require 'org-tempo)
+  (setq-default cursor-type 'bar)
+  (setq inhibit-startup-screen t)
+  (scroll-bar-mode -1)
+  (tool-bar-mode -1)
+  (menu-bar-mode -1)
+  (prefer-coding-system 'utf-8-unix)
+  (add-to-list 'load-path
+                 (concat os-packages-path "use-package/"))
+#+end_src
+
+* Packages
+
+#+begin_src emacs-lisp
+  (package-initialize)
+  (require 'use-package)
+#+end_src
+
+#+begin_src emacs-lisp
+  (use-package package
+      :config
+      (setq package-archive-priorities
+            '(("melpa-stable" . 2)
+              ("MELPA" . 1)
+              ("gnu" . 0)))
+
+      (setq package-archives
+            '(("melpa-stable" . "https://stable.melpa.org/packages/")
+              ("MELPA" . "https://melpa.org/packages/")
+              ("gnu" . "https://elpa.gnu.org/packages/")))
+      )
+#+end_src
+
+** Icon
+
+#+begin_src emacs-lisp
+    (use-package nerd-icons
+      :ensure t
+      :custom
+      ;; The Nerd Font you want to use in GUI
+      ;; "Symbols Nerd Font Mono" is the default and is recommended
+      ;; but you can use any other Nerd Font if you want
+      (nerd-icons-font-family "Symbols Nerd Font Mono")
+      :config
+      (add-to-list 'nerd-icons-extension-icon-alist
+                 '("h" nerd-icons-faicon "nf-fa-h_square" :face nerd-icons-purple))
+      )
+#+end_src
+
+#+begin_src emacs-lisp
+  (use-package org-bullets
+       :ensure t
+
+       :hook
+       (org-mode . org-bullets-mode)
+
+       :config
+       (setq org-bullets-face-name (quote org-bullet-face))
+       (add-hook 'org-mode-hook (lambda () (org-bullets-mode 1)))
+
+       ;(setq org-bullets-bullet-list '("✙" "♱" "♰" "☥" "✞" "✟" "✝" "†" "✠" "✚" "✜" "✛" "✢" "✣" "✤" "✥"))
+       (setq org-bullets-bullet-list '("✦" "✧" "✵" "✶" "✷" "✸" "✹"))
+       )
+#+end_src
+** packages
+
+#+begin_src emacs-lisp
+  (use-package magit
+    :ensure t)
+  ;; Enable rich annotations using the Marginalia package
+  (use-package marginalia
+    :ensure t
+    ;; Bind `marginalia-cycle' locally in the minibuffer.  To make the binding
+    ;; available in the *Completions* buffer, add it to the
+    ;; `completion-list-mode-map'.
+    :bind (:map minibuffer-local-map
+                ("M-A" . marginalia-cycle))
+    :init
+    ;; Marginalia must be activated in the :init section of use-package such that
+    ;; the mode gets enabled right away. Note that this forces loading the
+    ;; package.
+    (marginalia-mode))
+
+  (use-package which-key
+    :ensure t
+    :init
+    (which-key-mode)
+    :config
+    ;; Tempo di attesa (in secondi) prima che compaia il popup
+    (setq which-key-idle-delay 2)
+
+    ;; Tempo di attesa dopo aver premuto un tasto "parziale"
+    (setq which-key-idle-secondary-delay 0.05)
+
+    ;; Dove mostrare il popup: 'bottom, 'side-window, 'minibuffer, 'top
+    (setq which-key-popup-type 'side-window)
+    (setq which-key-side-window-location 'bottom)
+
+    ;; Altezza massima della finestra popup (frazione dello schermo)
+    (setq which-key-side-window-max-height 0.15)
+
+    ;; Larghezza massima quando è a lato
+    (setq which-key-side-window-max-width 0.33)
+
+    ;; Numero massimo di colonne mostrate
+    (setq which-key-max-description-length 27)
+
+    ;; Ordina le voci per: 'key-order (default), 'description, 'group
+    (setq which-key-sort-order 'which-key-key-order)
+
+    ;; Separatore tra tasto e descrizione
+    (setq which-key-separator " → ")
+
+    ;; Mostra anche i comandi remappati
+    (setq which-key-show-remaining-keys t))
+
+  (use-package auto-dim-other-buffers
+    :ensure t
+    :config
+    (auto-dim-other-buffers-mode 1))
+#+end_src
+
+#+begin_src emacs-lisp
+  (use-package beacon
+    :ensure t)
+  (beacon-mode 1)
+#+end_src
+
+#+begin_src emacs-lisp
+  (use-package swiper
+    :ensure t
+    :config
+      (global-set-key "\C-s" 'swiper))
+#+end_src
+
+#+begin_src emacs-lisp
+  (use-package rainbow-delimiters
+      :ensure t
+      :hook (prog-mode . rainbow-delimiters-mode))
+#+end_src
+
+#+begin_src emacs-lisp
+    ;; Enable Vertico.
+    (use-package vertico
+      :ensure t
+      :custom
+      (vertico-scroll-margin 0) ;; Different scroll margin
+      (vertico-count 7) ;; Show more candidates
+      (vertico-resize t) ;; Grow and shrink the Vertico minibuffer
+      (vertico-cycle t) ;; Enable cycling for `vertico-next/previous'
+      :bind (:map vertico-map
+              ("TAB" . minibuffer-complete))
+      :init
+      (vertico-mode))
+
+    ;; Persist history over Emacs restarts. Vertico sorts by history position.
+    (use-package savehist
+      :ensure t
+      :init
+      (savehist-mode))
+
+    ;; Emacs minibuffer configurations.
+    (use-package emacs
+      :custom
+      ;; Enable context menu. `vertico-multiform-mode' adds a menu in the minibuffer
+      ;; to switch display modes.
+      (context-menu-mode t)
+      ;; Support opening new minibuffers from inside existing minibuffers.
+      (enable-recursive-minibuffers t)
+      ;; Hide commands in M-x which do not work in the current mode.  Vertico
+      ;; commands are hidden in normal buffers. This setting is useful beyond
+      ;; Vertico.
+      (read-extended-command-predicate #'command-completion-default-include-p)
+      ;; Do not allow the cursor in the minibuffer prompt
+      (minibuffer-prompt-properties
+       '(read-only t cursor-intangible t face minibuffer-prompt)))
+
+    ;; Optionally use the `orderless' completion style.
+  (use-package orderless
+    :ensure t
+    :custom
+    ;; Configure a custom style dispatcher (see the Consult wiki)
+    ;; (orderless-style-dispatchers '(+orderless-consult-dispatch orderless-affix-dispatch))
+    ;; (orderless-component-separator #'orderless-escapable-split-on-space)
+    (completion-styles '(orderless basic))
+    (completion-category-overrides '((file (styles partial-completion))))
+    (completion-category-defaults nil) ;; Disable defaults, use our settings
+    (completion-pcm-leading-wildcard t)) ;; Emacs 31: partial-completion behaves like substring
+#+end_src
+
+** completition
+#+begin_src emacs-lisp
+  (use-package company
+    :ensure t
+    :init
+    (global-company-mode)
+    :custom
+    (company-idle-delay 0.0)
+    (company-minimum-prefix-length 2)
+    (company-selection-wrap-around t)
+
+    ;; Rende il completamento case-sensitive solo se inserisci lettere maiuscole
+    (company-dabbrev-ignore-case nil)
+    (company-dabbrev-downcase nil))
+#+end_src
+** Themes
+
+#+begin_src emacs-lisp
+  (use-package doom-themes
+  :ensure t
+  :custom
+  ;; Global settings (defaults)
+  (doom-themes-enable-bold t)   ; if nil, bold is universally disabled
+  (doom-themes-enable-italic t) ; if nil, italics is universally disabled
+  ;; for treemacs users
+  (doom-themes-treemacs-theme "doom-atom") ; use "doom-colors" for less minimal icon theme
+  :config
+  ;(load-theme 'doom-palenight t)
+  (load-theme 'doom-dracula t)
+
+  ;; Enable flashing mode-line on errors
+  (doom-themes-visual-bell-config)
+  ;; Enable custom neotree theme (nerd-icons must be installed!)
+  (doom-themes-neotree-config)
+  ;; or for treemacs users
+  (doom-themes-treemacs-config)
+  ;; Corrects (and improves) org-mode's native fontification.
+  (doom-themes-org-config))
+  (custom-set-faces
+   ;; Finestra ATTIVA #715d8f #282a36
+   '(mode-line ((t (:background "#715d8f" :foreground "#f0f1f7" :bold t))))
+
+   ;; Finestra INATTIVA  #726a7d  #282a36
+   '(mode-line-inactive ((t (:background "#726a7d" :foreground "#282a36")))))
+#+end_src
+
+** doom-modeline
+
+#+begin_src emacs-lisp
+
+  (use-package winum
+    :ensure t
+    :config
+    (winum-mode 1))
+
+  (use-package doom-modeline
+    :ensure t
+    :init
+    (setq doom-modeline-support-imenu t)
+    (doom-modeline-mode 1)
+    :config
+    (setq doom-modeline-support-imenu t)
+    (setq doom-modeline-window-number t)
+
+    ;; How tall the mode-line should be. It's only respected in GUI.
+    ;; If the actual char height is larger, it respects the actual height.
+    (setq doom-modeline-height 25)
+
+    ;; How wide the mode-line bar should be. It's only respected in GUI.
+    (setq doom-modeline-bar-width 5)
+
+    ;; Whether to use hud instead of dexfault bar. It's only respected in GUI.
+    (setq doom-modeline-hud nil)
+
+    ;; The limit of the window width.
+    ;; If `window-width' is smaller than the limit, some information won't be
+    ;; displayed. It can be an integer or a float number. `nil' means no limit."
+    (setq doom-modeline-window-width-limit 85)
+
+    ;; Override attributes of the face used for padding.
+    ;; If the space character is very thin in the modeline, for example if a
+    ;; variable pitch font is used there, then segments may appear unusually close.
+    ;; To use the space character from the `fixed-pitch' font family instead, set
+    ;; this variable to `(list :family (face-attribute 'fixed-pitch :family))'.
+    (setq doom-modeline-spc-face-overrides nil)
+
+    ;; How to detect the project root.
+    ;; nil means to use `default-directory'.
+    ;; The project management packages have some issues on detecting project root.
+    ;; e.g. `projectile' doesn't handle symlink folders well, while `project' is unable
+    ;; to handle sub-projects.
+    ;; You can specify one if you encounter the issue.
+    (setq doom-modeline-project-detection 'auto)
+
+    ;; Determines the style used by `doom-modeline-buffer-file-name'.
+    ;;
+    ;; Given ~/Projects/FOSS/emacs/lisp/comint.el
+    ;;   auto => emacs/l/comint.el (in a project) or comint.el
+    ;;   truncate-upto-project => ~/P/F/emacs/lisp/comint.el
+    ;;   truncate-from-project => ~/Projects/FOSS/emacs/l/comint.el
+    ;;   truncate-with-project => emacs/l/comint.el
+    ;;   truncate-except-project => ~/P/F/emacs/l/comint.el
+    ;;   truncate-upto-root => ~/P/F/e/lisp/comint.el
+    ;;   truncate-all => ~/P/F/e/l/comint.el
+    ;;   truncate-nil => ~/Projects/FOSS/emacs/lisp/comint.el
+    ;;   relative-from-project => emacs/lisp/comint.el
+    ;;   relative-to-project => lisp/comint.el
+    ;;   file-name => comint.el
+    ;;   file-name-with-project => FOSS|comint.el
+    ;;   project => FOSS
+    ;;   buffer-name => comint.el<2> (uniquify buffer name)
+    ;;
+    ;; If you are experiencing the laggy issue, especially while editing remote files
+    ;; with tramp, please try `file-name' style.
+    ;; Please refer to https://github.com/bbatsov/projectile/issues/657.
+    (setq doom-modeline-buffer-file-name-style 'auto)
+
+    (setq doom-modeline-icon-type 'nerd-icons)
+    ;; Whether display icons in the mode-line.
+    ;; While using the server mode in GUI, should set the value explicitly.
+    (setq doom-modeline-icon t)
+
+    ;; Whether display the icon for `major-mode'. It respects option `doom-modeline-icon'.
+    (setq doom-modeline-major-mode-icon t)
+
+    ;; Whether display the colorful icon for `major-mode'.
+    ;; It respects `nerd-icons-color-icons'.
+    (setq doom-modeline-major-mode-color-icon t)
+
+    ;; Whether display the icon for the buffer state. It respects option `doom-modeline-icon'.
+    (setq doom-modeline-buffer-state-icon t)
+
+    ;; Whether display the modification icon for the buffer.
+    ;; It respects option `doom-modeline-icon' and option `doom-modeline-buffer-state-icon'.
+    (setq doom-modeline-buffer-modification-icon t)
+
+    ;; Whether display the lsp icon. It respects option `doom-modeline-icon'.
+    (setq doom-modeline-lsp-icon t)
+
+    ;; Whether display the time icon. It respects option `doom-modeline-icon'.
+    (setq doom-modeline-time-icon t)
+
+    ;; Whether display the live icons of time.
+    ;; It respects option `doom-modeline-icon' and option `doom-modeline-time-icon'.
+    (setq doom-modeline-time-live-icon t)
+
+    ;; Whether to use an analogue clock svg as the live time icon.
+    ;; It respects options `doom-modeline-icon', `doom-modeline-time-icon', and `doom-modeline-time-live-icon'.
+    (setq doom-modeline-time-analogue-clock t)
+
+    ;; The scaling factor used when drawing the analogue clock.
+    (setq doom-modeline-time-clock-size 0.7)
+
+    ;; Whether to use unicode numbers.
+    (setq doom-modeline-unicode-number t)
+
+    ;; Whether to use unicode as a fallback (instead of ASCII) when not using icons.
+    (setq doom-modeline-unicode-fallback nil)
+
+    ;; Whether display the buffer name.
+    (setq doom-modeline-buffer-name t)
+
+    ;; Whether highlight the modified buffer name.
+    (setq doom-modeline-highlight-modified-buffer-name t)
+
+    ;; When non-nil, mode line displays column numbers zero-based.
+    ;; See `column-number-indicator-zero-based'.
+    (setq doom-modeline-column-zero-based t)
+
+    ;; Specification of \"percentage offset\" of window through buffer.
+    ;; See `mode-line-percent-position'.
+    (setq doom-modeline-percent-position '(-3 "%p"))
+
+    ;; Format used to display line numbers in the mode line.
+    ;; See `mode-line-position-line-format'.
+    (setq doom-modeline-position-line-format '("L%l"))
+
+    ;; Format used to display column numbers in the mode line.
+    ;; See `mode-line-position-column-format'.
+    (setq doom-modeline-position-column-format '("C%c"))
+
+    ;; Format used to display combined line/column numbers in the mode line. See `mode-line-position-column-line-format'.
+    (setq doom-modeline-position-column-line-format '("%l:%c"))
+
+    ;; Whether display the minor modes in the mode-line.
+    (setq doom-modeline-minor-modes nil)
+
+    ;; Whether display the selection information.
+    (setq doom-modeline-selection-info t)
+
+    ;; If non-nil, a word count will be added to the selection-info modeline segment.
+    (setq doom-modeline-enable-word-count nil)
+
+    ;; Major modes in which to display word count continuously.
+    ;; Also applies to any derived modes. Respects `doom-modeline-enable-word-count'.
+    ;; If it brings the sluggish issue, disable `doom-modeline-enable-word-count' or
+    ;; remove the modes from `doom-modeline-continuous-word-count-modes'.
+    (setq doom-modeline-continuous-word-count-modes '(markdown-mode gfm-mode org-mode))
+
+    ;; Whether display the buffer position information.
+    (setq doom-modeline-enable-buffer-position t)
+
+    ;; Whether display the buffer encoding.
+    (setq doom-modeline-buffer-encoding t)
+
+    ;; Whether display the indentation information.
+    (setq doom-modeline-indent-info nil)
+
+    ;; Whether display the total line number。
+    (setq doom-modeline-total-line-number nil)
+
+    ;; Whether display the icon of vcs segment. It respects option `doom-modeline-icon'."
+    (setq doom-modeline-vcs-icon t)
+
+    ;; The maximum displayed length of the branch name of version control.
+    (setq doom-modeline-vcs-max-length 15)
+
+    ;; The function to display the branch name.
+    (setq doom-modeline-vcs-display-function #'doom-modeline-vcs-name)
+
+    ;; Alist mapping VCS states to their corresponding faces.
+    ;; See `vc-state' for possible values of the state.
+    ;; For states not explicitly listed, the `doom-modeline-vcs-default' face is used.
+    (setq doom-modeline-vcs-state-faces-alist
+        '((needs-update . (doom-modeline-warning bold))
+            (removed . (doom-modeline-urgent bold))
+            (conflict . (doom-modeline-urgent bold))
+            (unregistered . (doom-modeline-urgent bold))))
+
+    ;; Whether display the icon of check segment. It respects option `doom-modeline-icon'.
+    (setq doom-modeline-check-icon t)
+
+    ;; How to display the check segment.
+    ;; auto mode adapts to window width (see `doom-modeline-window-width-limit').
+    ;; full displays all detailed error information.
+    ;; simple summarizes error counts.
+    ;; nil disables the check segment.
+    (setq doom-modeline-check 'auto)
+
+    ;; The maximum number displayed for notifications.
+    (setq doom-modeline-number-limit 99)
+
+    ;; Whether display the project name. Non-nil to display in the mode-line.
+    (setq doom-modeline-project-name t)
+
+    ;; Whether display the workspace name. Non-nil to display in the mode-line.
+    (setq doom-modeline-workspace-name t)
+
+    ;; Whether display the perspective name. Non-nil to display in the mode-line.
+    (setq doom-modeline-persp-name t)
+
+    ;; If non nil the default perspective name is displayed in the mode-line.
+    (setq doom-modeline-display-default-persp-name nil)
+
+    ;; If non nil the perspective name is displayed alongside a folder icon.
+    (setq doom-modeline-persp-icon t)
+
+    ;; Whether display the `lsp' state. Non-nil to display in the mode-line.
+    (setq doom-modeline-lsp t)
+
+    ;; Whether display the GitHub notifications. It requires `ghub' package.
+    (setq doom-modeline-github nil)
+
+    ;; The interval of checking GitHub.
+    (setq doom-modeline-github-interval (* 30 60))
+
+    ;; Whether display the modal state.
+    ;; Including `evil', `overwrite', `god', `ryo' and `xah-fly-keys', etc.
+    (setq doom-modeline-modal t)
+
+    ;; Whether display the modal state icon.
+    ;; Including `evil', `overwrite', `god', `ryo' and `xah-fly-keys', etc.
+    (setq doom-modeline-modal-icon t)
+
+    ;; Whether display the modern icons for modals.
+    (setq doom-modeline-modal-modern-icon t)
+
+    ;; When non-nil, always show the register name when recording an evil macro.
+    (setq doom-modeline-always-show-macro-register nil)
+
+    ;; Whether display the mu4e notifications. It requires `mu4e-alert' package.
+    (setq doom-modeline-mu4e nil)
+    ;; Whether display the gnus notifications.
+    (setq doom-modeline-gnus t)
+
+    ;; Whether gnus should automatically be updated and how often (set to 0 or smaller than 0 to disable)
+    (setq doom-modeline-gnus-timer 2)
+
+    ;; Whether groups should be excluded when gnus automatically being updated.
+    (setq doom-modeline-gnus-excluded-groups '("dummy.group"))
+
+    ;; Whether display the IRC notifications. It requires `circe', `erc' or `rcirc' package.
+    (setq doom-modeline-irc t)
+
+    ;; Function to stylize the irc buffer names.
+    (setq doom-modeline-irc-stylize 'identity)
+
+    ;; Whether to filter IRC notifications. It supports `circe' and `rcirc'.
+    (setq doom-modeline-irc-priority-only nil)
+
+    ;; Whether display the battery status. It respects `display-battery-mode'.
+    (setq doom-modeline-battery t)
+
+    ;; Whether display the time. It respects `display-time-mode'.
+    (setq doom-modeline-time t)
+
+    ;; Whether display the misc segment on all mode lines.
+    ;; If nil, display only if the mode line is active.
+    (setq doom-modeline-display-misc-in-all-mode-lines t)
+
+    ;; Whether to display the remote host information.
+    (setq doom-modeline-remote-host t)
+
+    ;; The function to handle `buffer-file-name'.
+    (setq doom-modeline-buffer-file-name-function #'identity)
+
+    ;; The function to handle `buffer-file-truename'.
+    (setq doom-modeline-buffer-file-truename-function #'identity)
+
+    ;; Whether display the environment version.
+    (setq doom-modeline-env-version t)
+    ;; Or for individual languages
+    (setq doom-modeline-env-enable-python t)
+    (setq doom-modeline-env-enable-ruby t)
+    (setq doom-modeline-env-enable-perl t)
+    (setq doom-modeline-env-enable-go t)
+    (setq doom-modeline-env-enable-elixir t)
+    (setq doom-modeline-env-enable-rust t)
+
+    ;; Change the executables to use for the language version string
+    (setq doom-modeline-env-python-executable "python") ; or `python-shell-interpreter'
+    (setq doom-modeline-env-ruby-executable "ruby")
+    (setq doom-modeline-env-perl-executable "perl")
+    (setq doom-modeline-env-go-executable "go")
+    (setq doom-modeline-env-elixir-executable "iex")
+    (setq doom-modeline-env-rust-executable "rustc")
+
+    ;; What to display as the version while a new one is being loaded
+    (setq doom-modeline-env-load-string "...")
+
+    ;; By default, almost all segments are displayed only in the active window. To
+    ;; display such segments in all windows, specify e.g.
+    (setq doom-modeline-always-visible-segments '(mu4e irc))
+
+    ;; Hooks that run before/after the modeline version string is updated
+    (setq doom-modeline-before-update-env-hook nil)
+    (setq doom-modeline-after-update-env-hook nil))
+#+end_src
+
+** treemacs
+#+begin_src emacs-lisp
+  (use-package treemacs
+    :ensure t
+    :defer t
+    :custom
+    (treemacs-single-click-expand-action 'treemacs-visit-node-or-expand)
+    :bind
+    ("C-c t t" . treemacs)
+    ("C-c t b" . treemacs-bookmark)
+    ("C-c t d" . treemacs-select-directory)
+    :config
+    (setq treemacs-width 30
+          treemacs-is-never-other-window t)
+    (with-eval-after-load 'treemacs
+      (define-key treemacs-mode-map [mouse-1] #'treemacs-single-click-expand-action)))
+
+  (use-package treemacs-nerd-icons
+    :ensure t
+    :after (treemacs nerd-icons)
+    :config
+    (treemacs-load-theme "nerd-icons")
+
+    (treemacs-define-custom-icon
+     (concat "  " (nerd-icons-sucicon "nf-seti-makefile" :face 'nerd-icons-orange))
+     "Makefile" "makefile")
+
+    (treemacs-define-custom-icon
+     (concat "  " (nerd-icons-octicon "nf-oct-book" :face 'nerd-icons-lblue))
+     "README.md")
+
+    (treemacs-define-custom-icon
+     (concat "  " (nerd-icons-octicon "nf-oct-file_binary" :face 'nerd-icons-dsilver))
+     "o")
+
+    )
+#+end_src
+
+** Shell
+#+begin_src emacs-lisp
+  (use-package vterm-toggle
+    :ensure t
+    :bind ("C-<return>" . vterm-toggle)
+    :config
+    (setq vterm-toggle-fullscreen-p nil)
+    (add-to-list 'display-buffer-alist
+                 '((lambda (buffer-or-name _)
+                     (let ((buffer (get-buffer buffer-or-name)))
+                       (with-current-buffer buffer
+                         (or (equal major-mode 'vterm-mode)
+                             (string-prefix-p vterm-buffer-name (buffer-name buffer))))))
+                   (display-buffer-reuse-window display-buffer-at-bottom)
+                   (reusable-frames . visible)
+                   (window-height . 0.3))))
+
+  (with-eval-after-load 'org
+    (define-key org-mode-map (kbd "C-<return>") nil))
+#+end_src
+** dashboard
+#+begin_src emacs-lisp
+    (set-register ?2 '(file . "~/org/TODO.org"))
+    (set-register ?1 '(file . "~/.config/emacs/config.org"))
+    (use-package recentf
+      :ensure t
+      :init
+      (recentf-mode 1)
+      :config
+      (setq recentf-max-saved-items 5)
+
+      (add-to-list 'recentf-exclude "/[^./]+$")
+      (add-to-list 'recentf-exclude "/elpa/")
+      (add-to-list 'recentf-exclude "/.git/")
+      (add-to-list 'recentf-exclude "/tmp/")
+      (add-to-list 'recentf-exclude "\\.png\\'")
+      (add-to-list 'recentf-exclude "dashboard-v2.el")
+      (add-to-list 'recentf-exclude "config.el")
+      (add-to-list 'recentf-exclude "config.org")
+      (add-to-list 'recentf-exclude "TODO.org"))
+
+    (use-package projectile
+      :ensure t
+      :init
+      (projectile-mode +1)
+      :config
+      (setq projectile-project-search-path '("~/projects/"))
+      (setq projectile-track-known-projects-automatically nil))
+
+    (use-package org
+      :ensure t
+      :init
+      (setq org-agenda-files '("~/org/")))
+
+    (use-package dashboard
+      :ensure t
+      :init
+      (setq initial-buffer-choice 'dashboard-open)
+      :config
+      ;; Set the title
+      (setq dashboard-banner-logo-title "Gay")
+      ;; Set the banner
+      (setq dashboard-startup-banner '2)
+
+      ;; Content is not centered by default. To center, set
+      (setq dashboard-center-content t)
+      ;; vertically center content
+      (setq dashboard-vertically-center-content t)
+
+      ;; To disable shortcut "jump" indicators for each section, set
+      (setq dashboard-show-shortcuts nil)
+      (setq dashboard-items '((recents   . 4)
+                          (projects  . 7)
+                          (agenda    . 5)
+                          (registers . 5)))
+      (setq dashboard-startupify-list '(dashboard-insert-banner
+                                    dashboard-insert-newline
+                                    dashboard-insert-banner-title
+                                    dashboard-insert-newline
+                                    dashboard-insert-navigator
+                                    dashboard-insert-newline
+                                    dashboard-insert-init-info
+                                    dashboard-insert-items
+                                    dashboard-insert-newline
+                                    dashboard-insert-footer))
+      (setq dashboard-navigation-cycle t)
+      (setq dashboard-heading-shorcut-format " [%s]")
+      (setq dashboard-item-shortcuts '((recents   . "r")
+                                   (projects  . "p")
+                                   (agenda    . "a")
+                                   (registers . "e")))
+      (setq dashboard-item-names '(("Recent Files:"               . "Recently opened files:")
+                                   ("Agenda for today:"           . "Today's agenda:")
+                                   ("Agenda for the coming week:" . "Agenda:")))
+
+      (setq dashboard-display-icons-p t)     ; display icons on both GUI and terminal
+      (setq dashboard-icon-type 'nerd-icons) ; use `nerd-icons' package
+
+      (setq dashboard-set-heading-icons t)
+      (setq dashboard-set-file-icons t)
+
+      (dashboard-modify-heading-icons '((recents   . "nf-oct-file_added")
+                                    (projects . "nf-oct-server")
+                                    (agenda . "nf-oct-book")
+                                    (registers . "nf-oct-pin")))
+
+      (setq dashboard-icon-file-height 1.75)
+      (setq dashboard-icon-file-v-adjust -0.125)
+      (setq dashboard-heading-icon-height 1.75)
+      (setq dashboard-heading-icon-v-adjust -0.125)
+
+      (dashboard-setup-startup-hook))
+
+#+end_src
+* General
+#+begin_src emacs-lisp
+  (global-set-key (kbd "C-x C-b") #'ibuffer)
+  (global-set-key (kbd "C-c c") #'project-compile)
+  (setq ibuffer-expert t)
+  (setq make-backup-files nil)
+  (setq auto-save-default nil)
+  (setq create-lockfiles nil)
+  (auto-save-visited-mode -1)
+  (delete-selection-mode 1)
+  (tooltip-mode -1)
+  (setq org-support-shift-select t)
+  (setq show-help-function nil)
+  (setq window-divider-default-places 'right-only)
+  (setq window-divider-default-right-width 1)
+  (window-divider-mode 1)
+  (custom-set-faces
+   '(window-divider ((t (:foreground "#e155c0" :background "#e155c0"))))
+   '(window-divider-first-pixel ((t (:foreground "#e155c0" :background "#e155c0")))))
+
+  (setq use-short-answers t)
+
+  (setq-default fill-column 70)
+
+  (setq undo-limit 20000000)
+  (setq undo-strong-limit 40000000)
+
+  (setq scroll-step 3)
+  (setq line-number-mode t)
+  (setq inhibit-startup-screen t)
+  (setq ring-bell-function (quote ignore))
+  (setq ring-bell-function 'ignore)
+  (setq command-error-function
+        (lambda (data context caller)
+          (unless (memq (car data) '(beginning-of-buffer end-of-buffer))
+            (command-error-default-function data context caller))))
+
+  (setq display-time-24hr-format t)
+  (display-time-mode 1)
+  (pixel-scroll-precision-mode 1)
+  (scroll-bar-mode -1)
+  (menu-bar-mode -1)
+  (tool-bar-mode 0)
+  (column-number-mode)
+  (global-visual-line-mode)
+  ;; close "Async-native-compile-log"
+  (add-hook 'emacs-startup-hook
+          (lambda ()
+            (when-let ((buf (get-buffer "*Async-native-compile-log*")))
+              (kill-buffer buf))))
+#+end_src
+
+#+begin_src emacs-lisp
+  (setq fixme-modes '(c++-mode c-mode emacs-lisp-mode latex-mode scheme-mode python-mode))
+  (defface font-lock-fixme-face
+    '((t :foreground "Magenta" :bold t :italic t))
+    "Face per TODO.")
+
+  (defface font-lock-debug-face
+    '((t :foreground "DarkOrange" :bold t :italic t))
+    "Face per DEBUG.")
+
+  (defface font-lock-important-face
+    '((t :foreground "Red" :bold t :italic t))
+    "Face per IMPORTANT.")
+
+  (defface font-lock-note-face
+    '((t :foreground "DeepSkyBlue" :bold t :italic t))
+    "Face per NOTE.")
+
+  (mapc (lambda (mode)
+          (font-lock-add-keywords
+           mode
+           '(("\\<\\(TODO\\)" 1 'font-lock-fixme-face t)
+             ("\\<\\(DEBUG\\)" 1 'font-lock-debug-face t)
+             ("\\<\\(IMPORTANT\\)" 1 'font-lock-important-face t)
+             ("\\<\\(NOTE\\)" 1 'font-lock-note-face t))))
+        fixme-modes)
+#+end_src
+
+#+begin_src emacs-lisp
+  (setq-default indent-tabs-mode nil)
+  (setq-default tab-width 4)
+  (setq tab-always-indent 'complete)
+  (delete-selection-mode 1)
+  (column-number-mode 1)
+  (show-paren-mode 1)
+  (add-hook 'before-save-hook #'delete-trailing-whitespace)
+
+  ;; C
+  (setq c-ts-mode-indent-style 'linux)
+  (setq c-ts-mode-indent-offset 4)
+
+  ;; Python
+  (setq python-indent-offset 4)
+#+end_src
+
+* File Exts
+#+begin_src emacs-lisp
+  (add-to-list 'major-mode-remap-alist '(c-mode . c-ts-mode))
+  (setq c-ts-mode-emacs-sources-support t)
+  (global-font-lock-mode t)
+  (setq font-lock-maximum-decoration t)
+  (setq treesit-font-lock-level 3)
+
+  (add-hook 'prog-mode-hook #'display-line-numbers-mode)
+  (add-hook 'prog-mode-hook #'hl-line-mode)
+  (electric-pair-mode 1)
+  (setq electric-pair-skip-self t)
+  (show-paren-mode 1)
+  (setq show-paren-delay 0)
+  (setq auto-mode-alist
+        (append
+         '(("\\.cpp$"    . c++-ts-mode)
+         ("\\.hin$"    . c++-ts-mode)
+         ("\\.cin$"    . c++-ts-mode)
+         ("\\.inl$"    . c++-ts-mode)
+         ("\\.rdc$"    . c++-ts-mode)
+         ("\\.h$"      . c-or-c++-ts-mode)
+         ("\\.c$"      . c-ts-mode)
+         ("\\.cc$"     . c++-ts-mode)
+         ("\\.c8$"     . c-ts-mode)
+         ("\\.txt$"    . indented-text-mode)
+         ("\\.emacs$"  . emacs-lisp-mode)
+         ("\\.gen$"    . gen-mode)
+         ("\\.ms$"     . fundamental-mode)
+         ("\\.m$"      . objc-mode)
+         ("\\.mm$"     . objc-mode)
+         ("\\.asm$"    . asm86-mode)
+         ("\\.inc$"    . asm86-mode)
+         ("\\.lua$"    . lua-ts-mode)
+         ) auto-mode-alist))
+
+  (setq auto-mode-alist
+        (append
+         '((".offlineimaprc"   . conf-mode)
+         (".moc.conf"        . conf-mode)
+         ("github_blog.prf"  . conf-mode)
+         ("knwl_org.prf"     . conf-mode)
+         ("public_org.prf"   . conf-mode)
+         ("i3config"         . conf-mode)
+         (".i3blocks.conf"   . conf-mode)
+         (".compton.conf"    . conf-mode)
+         (".gitconfig"       . conf-mode)
+         ) auto-mode-alist))
+#+end_src
+* My Function
+
+#+begin_src emacs-lisp
+  (defun my/split-window-below-and-focus ()
+    "Divide la finestra in verticale e sposta subito il focus in quella nuova."
+    (interactive)
+    (split-window-below)
+    (other-window 1))
+
+  (defun my/split-window-right-and-focus ()
+    "Divide la finestra in orizzontale e sposta subito il focus in quella nuova."
+    (interactive)
+    (split-window-right)
+    (other-window 1))
+
+  ;; Rimappa i tasti di default (C-x 2 e C-x 3)
+  (global-set-key (kbd "C-x 2") #'my/split-window-below-and-focus)
+  (global-set-key (kbd "C-x 3") #'my/split-window-right-and-focus)
+#+end_src
+
+#+begin_src emacs-lisp
+  (defun my/shift-click-select (event)
+    (interactive "e")
+    (unless (use-region-p)
+      (push-mark nil t t))
+    (mouse-set-point event))
+
+  (global-set-key [S-down-mouse-1] 'my/shift-click-select)
+  (global-unset-key [S-mouse-1])
+#+end_src
+
+#+begin_src emacs-lisp
+  (defun my/clean-todo-buffer (&rest _)
+        (run-with-timer 0.001 nil
+                        (lambda ()
+                          (dolist (buf (buffer-list))
+                            (when (string-match-p "TODO\\.org" (buffer-name buf))
+                              (kill-buffer buf))))))
+
+      (advice-add 'dashboard-open :after #'my/clean-todo-buffer)
+      (advice-add 'dashboard-refresh-buffer :after #'my/clean-todo-buffer)
+#+end_src
+
+#+begin_src emacs-lisp
+  (defun my/focus-compilation-window (&rest _)
+    (when-let* ((buf compilation-last-buffer)
+                (win (get-buffer-window buf)))
+      (select-window win)))
+
+  (advice-add 'compile :after #'my/focus-compilation-window)
+#+end_src
