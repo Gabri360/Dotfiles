@@ -368,12 +368,33 @@ hl.window_rule({
     float = true,
 })
 
-
 hl.window_rule({
     name = "sdl",
     match = {
           class = "sdl",
           title = "sdl",
+          },
+          float = true,
+})
+hl.window_rule({
+    name = "ueberzugpp",
+    match = {
+          class = "ueberzugpp_.*",
+          title = "ueberzugpp_.*",
+          },
+          float = true,
+})
+hl.window_rule({
+    name = "pygame",
+    match = {
+          title = "pygame window",
+          },
+          float = true,
+})
+hl.window_rule({
+    name = "pygame2",
+    match = {
+          title = "gatti",
           },
           float = true,
 })
