@@ -37,8 +37,9 @@ hl.monitor({
 
 -- Set programs that you use
 local terminal    = "kitty"
-local fileManager = "hyprfm"
+local fileManager = "thunar"
 local menu        = "hyprlauncher"
+local browser     = "firefox"
 
 -------------------
 ---- AUTOSTART ----
@@ -98,7 +99,7 @@ hl.permission("/usr/(bin|local/bin)/hyprpm", "plugin", "allow")
 hl.config({
     general = {
         gaps_in  = 3,
-        gaps_out = 8,
+        gaps_out = 5,
 
         border_size = 2,
 
@@ -117,7 +118,7 @@ hl.config({
     },
 
     decoration = {
-        rounding       = 7,
+        rounding       = 4,
         rounding_power = 4,
 
         -- Change transparency of focused and unfocused windows
@@ -126,7 +127,7 @@ hl.config({
 
         shadow = {
             enabled      = true,
-            range        = 4,
+            range        = 20,
             render_power = 3,
             color        = 0xee1a1a1a,
         },
@@ -270,7 +271,7 @@ local mainMod = "SUPER" -- Sets "Windows" key as main modifier
 
 -- Example binds, see https://wiki.hypr.land/Configuring/Basics/Binds/ for more
 hl.bind(mainMod .. " + RETURN", hl.dsp.exec_cmd(terminal), {description="Terminal"})
-hl.bind(mainMod .. " + F", hl.dsp.exec_cmd("firefox"), {description="Firefox"})
+hl.bind(mainMod .. " + F", hl.dsp.exec_cmd(browser), {description="Firefox"})
 hl.bind(mainMod .. " + L", hl.dsp.exec_cmd("emacsclient -c -a ''"), {description="Emacs"})
 local closeWindowBind = hl.bind(mainMod .. " + C", hl.dsp.window.close(), {description="Close window"})
 -- closeWindowBind:set_enabled(false)
@@ -279,12 +280,21 @@ hl.bind(mainMod .. " + W", hl.dsp.exec_cmd("killall -SIGUSR1 waybar"), {descript
 hl.bind(mainMod .. " + O", hl.dsp.exec_cmd("~/.local/bin/toggle-wallpapaer.sh"), {description="Toggle desktop"})
 hl.bind(mainMod .. " + E", hl.dsp.exec_cmd(fileManager), {description="Thunar"})
 hl.bind(mainMod .. " + V", hl.dsp.window.float({ action = "toggle" }), {description="Floating"})
+hl.bind(mainMod .. " + CTRL + F", hl.dsp.window.fullscreen({ mode = "fullscreen", action = "toggle" }), { description = "Fullscreen" })
 hl.bind(mainMod .. " + SPACE", hl.dsp.exec_cmd(menu), {description="Rofi"})
 hl.bind(mainMod .. " + P", hl.dsp.exec_cmd("hyprlock"), {description="Lock"})
 hl.bind(mainMod .. " + J", hl.dsp.layout("togglesplit"), {description="Split"})    -- dwindle only
 hl.bind(mainMod .. " + X", hl.dsp.exec_cmd('hyprshot -m region -o /home/gabri/Pictures/'), {description="Screen cut"})
 hl.bind(mainMod .. " + H", hl.dsp.exec_cmd("~/.local/bin/hypr-keybinds-rofi.sh"), {description="Help"})
 hl.bind("SUPER + TAB", function() hl.plugin.hyprexpo.expo("toggle") end)
+
+hl.bind(mainMod .. " + CTRL + RETURN", hl.dsp.exec_cmd(terminal .. " --class floating-term"), {description="Floating terminal"})
+hl.bind(
+    mainMod .. " + CTRL + E",
+    hl.dsp.exec_cmd("GDK_BACKEND=x11 " .. fileManager .. " --class floating-thunar"),
+    { description = "Floating thunar" }
+)
+
 
 
 -- Move focus with mainMod + arrow keys
@@ -293,11 +303,21 @@ hl.bind(mainMod .. " + right", hl.dsp.focus({ workspace = "e+1" })) --hide
 
 -- Switch workspaces with mainMod + [0-9]
 -- Move active window to a workspace with mainMod + SHIFT + [0-9]
+
+local kp = { 87, 88, 89, 83, 84, 85, 79, 80, 81, 90 }
 for i = 1, 10 do
     local key = i % 10 -- 10 maps to key 0
     hl.bind(mainMod .. " + " .. key,             hl.dsp.focus({ workspace = i})) --hide
     hl.bind(mainMod .. " + SHIFT + " .. key,     hl.dsp.window.move({ workspace = i })) --hide
+    hl.bind(mainMod .. " + code:" .. kp[i],             hl.dsp.focus({ workspace = i})) --hide
+    hl.bind(mainMod .. " + SHIFT + code:" .. kp[i],     hl.dsp.window.move({ workspace = i })) --hide
 end
+
+hl.bind(mainMod .. " + CTRL + left",  hl.dsp.focus({ direction = "left" }))  --hide
+hl.bind(mainMod .. " + CTRL + right", hl.dsp.focus({ direction = "right" })) --hide
+hl.bind(mainMod .. " + CTRL + up",    hl.dsp.focus({ direction = "up" }))    --hide
+hl.bind(mainMod .. " + CTRL + down",  hl.dsp.focus({ direction = "down" }))  --hide
+
 
 -- Example special workspace (scratchpad)
 hl.bind(mainMod .. " + S",         hl.dsp.workspace.toggle_special("magic"), {description="Special frame"})
@@ -364,9 +384,9 @@ if hl.plugin.hyprglass then
 
     hg.preset("contrasted", {
         inherits = "high_contrast",
-        contrast = 1.2,
-        adaptive_dim = 1.5,
-        dark = { tint_color = 0x02142aa9 },
+        refraction_strenght = 1.0,
+        refraction_spread = 1.0,
+        chromatic_aberration = 1.0,
     })
 
     hg.layer("notifications", { preset = "glass", mask_threshold = 0.05 })
@@ -375,9 +395,9 @@ end
 
 hl.window_rule({ match = { class = "mpv" },       tag = "+hyprglass_disabled" })
 hl.window_rule({ match = { class = "Emacs"},    tag = "+hyprglass_disabled" })
-hl.window_rule({ match = { fullscreen = true },    tag = "+hyprglass_disabled" })
-hl.window_rule({ match = { class = "firefox" },    tag = "+hyprglass_theme_light" })
-hl.window_rule({ match = { class = "kitty" }, tag = "+hyprglass_preset_high_contrast" })
+hl.window_rule({ match = { class = "firefox" },    tag = "+hyprglass_disabled" })
+hl.window_rule({ match = { class = "kitty" }, tag = "+hyprglass_preset_contrasted" })
+hl.window_rule({ match = { class = "thunar" }, tag = "+hyprglass_preset_contrasted" })
 
 hl.config({
     plugin = {
@@ -441,6 +461,24 @@ hl.config({
 -- and https://wiki.hypr.land/Configuring/Basics/Workspace-Rules/
 
 -- Example window rules that are useful
+
+
+
+hl.window_rule({
+  name  = "firefox-opaco",
+  match = { class = "firefox" },
+  opacity = "0.99 override 0.99 override",
+})
+hl.window_rule({
+  name  = "brave-opaco",
+  match = { class = "brave-browser" },
+  opacity = "0.99 override 0.99 override",
+})
+hl.window_rule({
+  name  = "Emacs-opaco",
+  match = { class = "Emacs" },
+  opacity = "0.98 override 0.98 override",
+})
 
 local suppressMaximizeRule = hl.window_rule({
     -- Ignore maximize requests from all apps. You'll probably like this.
@@ -529,4 +567,22 @@ hl.window_rule({
           },
     float = true,
     center = true,
+})
+
+hl.window_rule({
+    name  = "floating-term",
+    match = { class = "^floating-term$" },
+    float  = true,
+    center = true,
+    size   = "600 600",
+    tag = "+hyprglass_preset_contrasted",
+})
+
+hl.window_rule({
+    name  = "floating-thunar",
+    match = { class = "^floating-thunar$" },
+    float  = true,
+    center = true,
+    size   = "900 900",
+    tag = "+hyprglass_preset_contrasted",
 })

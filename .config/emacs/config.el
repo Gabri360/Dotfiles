@@ -10,6 +10,7 @@
 (prefer-coding-system 'utf-8-unix)
 (add-to-list 'load-path
                (concat os-packages-path "use-package/"))
+(add-to-list 'load-path "~/.config/emacs/qml-ts-mode")
 
 (setq package-pinned-packages '((doom-themes . "MELPA")))
 (package-initialize)
@@ -20,12 +21,14 @@
     (setq package-archive-priorities
           '(("melpa-stable" . 2)
             ("MELPA" . 1)
-            ("gnu" . 0)))
+            ;("gnu" . 0)
+	    ))
 
     (setq package-archives
           '(("melpa-stable" . "https://stable.melpa.org/packages/")
             ("MELPA" . "https://melpa.org/packages/")
-            ("gnu" . "https://elpa.gnu.org/packages/")))
+            ;("gnu" . "https://elpa.gnu.org/packages/")
+            ))
     )
 
 (use-package nerd-icons
@@ -117,8 +120,17 @@
 (imenu-list-auto-resize t))
 
 (use-package beacon
-  :ensure t)
-(beacon-mode 1)
+  :ensure t
+  :custom
+  (beacon-size 25)
+  (beacon-blink-duration 0.3)
+  (beacon-blink-delay 0.1)
+  (beacon-color "#e155c0")
+  (beacon-blink-when-point-moves-vertically 3)
+  (beacon-blink-when-point-moves-horizontally 10)
+  (beacon-blink-when-window-scrolls nil)
+  :config
+  (beacon-mode 1))
 
 (use-package swiper
   :ensure t
@@ -510,6 +522,7 @@
 ;; Hooks that run before/after the modeline version string is updated
 (setq doom-modeline-before-update-env-hook nil)
 (setq doom-modeline-after-update-env-hook nil)
+
 (custom-set-faces
  ;; modeline attiva (finestra selezionata)
  '(mode-line-active ((t (:background "#13141a" :foreground "#f8f8f2"))))
@@ -729,7 +742,22 @@
 (setq undo-limit 20000000)
 (setq undo-strong-limit 40000000)
 
-(setq scroll-step 3)
+(setq scroll-step 0
+      scroll-margin 0
+      scroll-conservatively 101
+      scroll-preserve-screen-position t
+      fast-but-imprecise-scrolling t
+      redisplay-skip-fontification-on-input t
+      jit-lock-defer-time 0)
+
+(setq pixel-scroll-precision-use-momentum t
+      pixel-scroll-precision-momentum-seconds 0.5
+      pixel-scroll-precision-initial-velocity-factor 0.08
+      pixel-scroll-precision-interpolation-factor 2.0
+      pixel-scroll-precision-large-scroll-height 40.0)
+
+
+(setq show-paren-delay 0.1)
 (setq line-number-mode t)
 (setq inhibit-startup-screen t)
 (setq ring-bell-function (quote ignore))
@@ -741,7 +769,6 @@
 
 (setq display-time-24hr-format t)
 (display-time-mode 1)
-(pixel-scroll-precision-mode 1)
 (scroll-bar-mode -1)
 (menu-bar-mode -1)
 (tool-bar-mode 0)
@@ -749,9 +776,17 @@
 (global-visual-line-mode)
 ;; close "Async-native-compile-log"
 (add-hook 'emacs-startup-hook
-        (lambda ()
-          (when-let ((buf (get-buffer "*Async-native-compile-log*")))
-            (kill-buffer buf))))
+          (lambda ()
+            (when-let ((buf (get-buffer "*Async-native-compile-log*")))
+              (kill-buffer buf))))
+
+(use-package ultra-scroll
+:ensure t
+:init
+(setq scroll-conservatively 101
+      scroll-margin 0)
+:config
+(ultra-scroll-mode 1))
 
 (setq fixme-modes '(c++-mode c-mode emacs-lisp-mode latex-mode scheme-mode python-mode))
 (defface font-lock-fixme-face
@@ -846,11 +881,22 @@
   :mode (("CMakeLists.txt" . cmake-mode)
          ("\\.cmake\\'" . cmake-mode)))
 (use-package glsl-mode
-:ensure t
-:mode (("\\.vert\\'" . glsl-mode)
-       ("\\.frag\\'" . glsl-mode)
-       ("\\.geom\\'" . glsl-mode)
-       ("\\.glsl\\'" . glsl-mode)))
+  :ensure t
+  :mode (("\\.vert\\'" . glsl-mode)
+         ("\\.frag\\'" . glsl-mode)
+         ("\\.geom\\'" . glsl-mode)
+         ("\\.glsl\\'" . glsl-mode)))
+(use-package qml-ts-mode
+:after lsp-mode
+:config
+(add-to-list 'lsp-language-id-configuration '(qml-ts-mode . "qml-ts"))
+(lsp-register-client
+ (make-lsp-client :new-connection (lsp-stdio-connection '("qmlls"))
+                  :activation-fn (lsp-activate-on "qml-ts")
+                  :server-id 'qmlls))
+(add-hook 'qml-ts-mode-hook (lambda ()
+                              (setq-local electric-indent-chars '(?\n ?\( ?\) ?{ ?} ?\[ ?\] ?\; ?,))
+                              (lsp-deferred))))
 
 (defun my/split-window-below-and-focus ()
   "Divide la finestra in verticale e sposta subito il focus in quella nuova."
