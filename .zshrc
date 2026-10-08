@@ -47,3 +47,6 @@ DISABLE_MAGIC_FUNCTIONS="true"       # se il paste di URL/testo si comporta male
 # zstyle ':omz:update' mode auto      # aggiorna senza chiedere
 # zstyle ':omz:update' mode reminder  # ricorda soltanto
 # zstyle ':omz:update' frequency 13   # ogni N giorni
+export PATH="$HOME/.local/bin:$PATH"
+
+bindkey '^H' backward-kill-word

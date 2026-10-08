@@ -108,6 +108,14 @@
   :config
   (auto-dim-other-buffers-mode 1))
 
+(use-package imenu-list
+:ensure t
+:bind
+("C-c i" . imenu-list-smart-toggle)
+:custom
+(imenu-list-focus-after-activation t)
+(imenu-list-auto-resize t))
+
 (use-package beacon
   :ensure t)
 (beacon-mode 1)
@@ -122,41 +130,57 @@
     :hook (prog-mode . rainbow-delimiters-mode))
 
 ;; Enable Vertico.
-  (use-package vertico
-    :ensure t
-    :custom
-    (vertico-scroll-margin 0) ;; Different scroll margin
-    (vertico-count 7) ;; Show more candidates
-    (vertico-resize t) ;; Grow and shrink the Vertico minibuffer
-    (vertico-cycle t) ;; Enable cycling for `vertico-next/previous'
-    :bind (:map vertico-map
-            ("TAB" . minibuffer-complete))
-    :init
-    (vertico-mode))
+(use-package vertico
+  :ensure t
+  :custom
+  (vertico-scroll-margin 0) ;; Different scroll margin
+  (vertico-count 7) ;; Show more candidates
+  (vertico-resize t) ;; Grow and shrink the Vertico minibuffer
+  (vertico-cycle t) ;; Enable cycling for `vertico-next/previous'
+  :bind (:map vertico-map
+              ("TAB" . minibuffer-complete))
+  :init
+  (vertico-mode))
+(use-package vertico-directory
+  :ensure nil
+  :after vertico
+  :bind (:map vertico-map
+              ("TAB"   . vertico-directory-enter)
+              ("DEL"   . vertico-directory-delete-char)
+              ("M-DEL" . vertico-directory-delete-word))
+  :hook (rfn-eshadow-update-overlay . vertico-directory-tidy))
 
-  ;; Persist history over Emacs restarts. Vertico sorts by history position.
-  (use-package savehist
-    :ensure t
-    :init
-    (savehist-mode))
+(use-package vertico-multiform
+  :ensure nil
+  :after vertico
+  :init (vertico-multiform-mode)
+  :custom
+  (vertico-multiform-categories '((file grid)))
+  (vertico-grid-separator "  ")
+  (vertico-grid-lookahead 50))
+;; Persist history over Emacs restarts. Vertico sorts by history position.
+(use-package savehist
+  :ensure t
+  :custom (history-length 1000)
+  :init (savehist-mode))
 
-  ;; Emacs minibuffer configurations.
-  (use-package emacs
-    :custom
-    ;; Enable context menu. `vertico-multiform-mode' adds a menu in the minibuffer
-    ;; to switch display modes.
-    (context-menu-mode t)
-    ;; Support opening new minibuffers from inside existing minibuffers.
-    (enable-recursive-minibuffers t)
-    ;; Hide commands in M-x which do not work in the current mode.  Vertico
-    ;; commands are hidden in normal buffers. This setting is useful beyond
-    ;; Vertico.
-    (read-extended-command-predicate #'command-completion-default-include-p)
-    ;; Do not allow the cursor in the minibuffer prompt
-    (minibuffer-prompt-properties
-     '(read-only t cursor-intangible t face minibuffer-prompt)))
+;; Emacs minibuffer configurations.
+(use-package emacs
+  :custom
+  ;; Enable context menu. `vertico-multiform-mode' adds a menu in the minibuffer
+  ;; to switch display modes.
+  (context-menu-mode t)
+  ;; Support opening new minibuffers from inside existing minibuffers.
+  (enable-recursive-minibuffers t)
+  ;; Hide commands in M-x which do not work in the current mode.  Vertico
+  ;; commands are hidden in normal buffers. This setting is useful beyond
+  ;; Vertico.
+  (read-extended-command-predicate #'command-completion-default-include-p)
+  ;; Do not allow the cursor in the minibuffer prompt
+  (minibuffer-prompt-properties
+   '(read-only t cursor-intangible t face minibuffer-prompt)))
 
-  ;; Optionally use the `orderless' completion style.
+;; Optionally use the `orderless' completion style.
 (use-package orderless
   :ensure t
   :custom
@@ -164,7 +188,7 @@
   ;; (orderless-style-dispatchers '(+orderless-consult-dispatch orderless-affix-dispatch))
   ;; (orderless-component-separator #'orderless-escapable-split-on-space)
   (completion-styles '(orderless basic))
-  (completion-category-overrides '((file (styles partial-completion))))
+  (completion-category-overrides '((file (styles partial-completion orderless))))
   (completion-category-defaults nil) ;; Disable defaults, use our settings
   (completion-pcm-leading-wildcard t)) ;; Emacs 31: partial-completion behaves like substring
 
@@ -501,7 +525,7 @@
   :custom
   (treemacs-single-click-expand-action 'treemacs-visit-node-or-expand)
   :bind
-  ("C-c t t" . treemacs)
+  ("C-c t t" . my/treemacs-toggle)
   ("C-c t b" . treemacs-bookmark)
   ("C-c t d" . treemacs-select-directory)
   :config
@@ -548,6 +572,7 @@
 (with-eval-after-load 'org
   (define-key org-mode-map (kbd "C-<return>") nil))
 
+(set-register ?3 '(file . "~/.config/hypr/hyprland.lua"))
 (set-register ?2 '(file . "~/org/TODO.org"))
 (set-register ?1 '(file . "~/.config/emacs/config.org"))
 (use-package recentf
@@ -638,6 +663,42 @@
   (setq dashboard-heading-icon-v-adjust -0.125)
 
   (dashboard-setup-startup-hook))
+
+(add-hook 'server-after-make-frame-hook #'dashboard-refresh-buffer)
+
+(use-package tex
+  :ensure auctex
+  :hook (LaTeX-mode . (lambda ()
+                        (TeX-source-correlate-mode 1)
+                        (setq TeX-command-default "LatexMk")))
+  :config
+  (setq TeX-auto-save t
+        TeX-parse-self t
+        TeX-PDF-mode t
+        TeX-source-correlate-method 'synctex
+        TeX-source-correlate-start-server t
+        TeX-view-program-list '(("PDF Tools" TeX-pdf-tools-sync-view))
+        TeX-view-program-selection '((output-pdf "PDF Tools")))
+  (add-hook 'TeX-after-compilation-finished-functions #'TeX-revert-document-buffer))
+
+(use-package auctex-latexmk
+  :ensure t
+  :after tex
+  :config
+  (auctex-latexmk-setup)
+  (setq auctex-latexmk-inherit-TeX-PDF-mode t))
+
+(use-package pdf-tools
+  :ensure t
+  :config
+  (pdf-tools-install)
+  (add-hook 'pdf-view-mode-hook #'auto-revert-mode)
+  (setq-default pdf-view-display-size 'fit-page))
+(use-package reftex
+  :ensure t
+  :hook (LaTeX-mode . reftex-mode)
+  :config
+  (setq reftex-plug-into-AUCTeX t))
 
 (global-set-key (kbd "C-x C-b") #'ibuffer)
 (global-set-key (kbd "C-c c") #'project-compile)
@@ -748,37 +809,48 @@
 (setq auto-mode-alist
       (append
        '(("\\.cpp$"    . c++-ts-mode)
-       ("\\.hin$"    . c++-ts-mode)
-       ("\\.cin$"    . c++-ts-mode)
-       ("\\.inl$"    . c++-ts-mode)
-       ("\\.rdc$"    . c++-ts-mode)
-       ("\\.h$"      . c-or-c++-ts-mode)
-       ("\\.c$"      . c-ts-mode)
-       ("\\.cc$"     . c++-ts-mode)
-       ("\\.c8$"     . c-ts-mode)
-       ("\\.txt$"    . indented-text-mode)
-       ("\\.emacs$"  . emacs-lisp-mode)
-       ("\\.gen$"    . gen-mode)
-       ("\\.ms$"     . fundamental-mode)
-       ("\\.m$"      . objc-mode)
-       ("\\.mm$"     . objc-mode)
-       ("\\.asm$"    . asm86-mode)
-       ("\\.inc$"    . asm86-mode)
-       ("\\.lua$"    . lua-ts-mode)
-       ) auto-mode-alist))
+         ("\\.hin$"    . c++-ts-mode)
+         ("\\.cin$"    . c++-ts-mode)
+         ("\\.inl$"    . c++-ts-mode)
+         ("\\.rdc$"    . c++-ts-mode)
+         ("\\.h$"      . c-or-c++-ts-mode)
+         ("\\.c$"      . c-ts-mode)
+         ("\\.cc$"     . c++-ts-mode)
+         ("\\.c8$"     . c-ts-mode)
+         ("\\.txt$"    . indented-text-mode)
+         ("\\.emacs$"  . emacs-lisp-mode)
+         ("\\.gen$"    . gen-mode)
+         ("\\.ms$"     . fundamental-mode)
+         ("\\.m$"      . objc-mode)
+         ("\\.mm$"     . objc-mode)
+         ("\\.asm$"    . asm86-mode)
+         ("\\.inc$"    . asm86-mode)
+         ("\\.lua$"    . lua-ts-mode)
+         ) auto-mode-alist))
 
 (setq auto-mode-alist
       (append
        '((".offlineimaprc"   . conf-mode)
-       (".moc.conf"        . conf-mode)
-       ("github_blog.prf"  . conf-mode)
-       ("knwl_org.prf"     . conf-mode)
-       ("public_org.prf"   . conf-mode)
-       ("i3config"         . conf-mode)
-       (".i3blocks.conf"   . conf-mode)
-       (".compton.conf"    . conf-mode)
-       (".gitconfig"       . conf-mode)
-       ) auto-mode-alist))
+         (".moc.conf"        . conf-mode)
+         ("github_blog.prf"  . conf-mode)
+         ("knwl_org.prf"     . conf-mode)
+         ("public_org.prf"   . conf-mode)
+         ("i3config"         . conf-mode)
+         (".i3blocks.conf"   . conf-mode)
+         (".compton.conf"    . conf-mode)
+         (".gitconfig"       . conf-mode)
+         ) auto-mode-alist))
+
+(use-package cmake-mode
+  :ensure t
+  :mode (("CMakeLists.txt" . cmake-mode)
+         ("\\.cmake\\'" . cmake-mode)))
+(use-package glsl-mode
+:ensure t
+:mode (("\\.vert\\'" . glsl-mode)
+       ("\\.frag\\'" . glsl-mode)
+       ("\\.geom\\'" . glsl-mode)
+       ("\\.glsl\\'" . glsl-mode)))
 
 (defun my/split-window-below-and-focus ()
   "Divide la finestra in verticale e sposta subito il focus in quella nuova."
@@ -821,3 +893,10 @@
     (select-window win)))
 
 (advice-add 'compile :after #'my/focus-compilation-window)
+
+(defun my/treemacs-toggle ()
+  (interactive)
+  (require 'treemacs)
+  (if (eq (treemacs-current-visibility) 'visible)
+      (delete-window (treemacs-get-local-window))
+    (treemacs-add-and-display-current-project-exclusively)))

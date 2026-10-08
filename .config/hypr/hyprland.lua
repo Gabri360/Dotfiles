@@ -29,15 +29,16 @@ hl.monitor({
 })
 
 
+
+
 ---------------------
 ---- MY PROGRAMS ----
 ---------------------
 
 -- Set programs that you use
 local terminal    = "kitty"
-local fileManager = "thunar"
-local menu        = "rofi -show"
-
+local fileManager = "hyprfm"
+local menu        = "hyprlauncher"
 
 -------------------
 ---- AUTOSTART ----
@@ -51,6 +52,7 @@ local menu        = "rofi -show"
 hl.on("hyprland.start", function ()
   hl.exec_cmd("nm-applet")
   hl.exec_cmd("waybar & hyprpaper")
+  hl.exec_cmd("hyprpm reload -n && hyprctl reload")
 end)
 
 
@@ -58,9 +60,10 @@ end)
 ---- ENVIRONMENT VARIABLES ----
 -------------------------------
 
--- See https://wiki.hypr.land/Configuring/Advanced-and-Cool/Environment-variables/
-
+-- See https://wiki.hypr.land/Configuring/Advanced-and-Cool/Environment-variables
+hl.env("XCURSOR_THEME", "catppuccin-mocha-dark-cursors")
 hl.env("XCURSOR_SIZE", "24")
+hl.env("HYPRCURSOR_THEME", "catppuccin-mocha-dark-cursors")
 hl.env("HYPRCURSOR_SIZE", "24")
 hl.env("XDG_SESSION_TYPE", "wayland")
 hl.env("XDG_CURRENT_DESKTOP","Hyprland")
@@ -84,7 +87,7 @@ hl.env("MOZ_ENABLE_WAYLAND","1")
 
 -- hl.permission("/usr/(bin|local/bin)/grim", "screencopy", "allow")
 -- hl.permission("/usr/(lib|libexec|lib64)/xdg-desktop-portal-hyprland", "screencopy", "allow")
--- hl.permission("/usr/(bin|local/bin)/hyprpm", "plugin", "allow")
+hl.permission("/usr/(bin|local/bin)/hyprpm", "plugin", "allow")
 
 
 -----------------------
@@ -240,6 +243,8 @@ hl.config({
         touchpad = {
             natural_scroll = true,
         },
+        repeat_rate = 50,
+        repeat_delay = 200,
     },
 })
 
@@ -277,8 +282,10 @@ hl.bind(mainMod .. " + V", hl.dsp.window.float({ action = "toggle" }), {descript
 hl.bind(mainMod .. " + SPACE", hl.dsp.exec_cmd(menu), {description="Rofi"})
 hl.bind(mainMod .. " + P", hl.dsp.exec_cmd("hyprlock"), {description="Lock"})
 hl.bind(mainMod .. " + J", hl.dsp.layout("togglesplit"), {description="Split"})    -- dwindle only
-hl.bind(mainMod .. " + X", hl.dsp.exec_cmd('grim -g "$(slurp)" - | wl-copy'), {description="Screen cut"})
+hl.bind(mainMod .. " + X", hl.dsp.exec_cmd('hyprshot -m region -o /home/gabri/Pictures/'), {description="Screen cut"})
 hl.bind(mainMod .. " + H", hl.dsp.exec_cmd("~/.local/bin/hypr-keybinds-rofi.sh"), {description="Help"})
+hl.bind("SUPER + TAB", function() hl.plugin.hyprexpo.expo("toggle") end)
+
 
 -- Move focus with mainMod + arrow keys
 hl.bind(mainMod .. " + left",  hl.dsp.focus({ workspace = "e-1" })) --hide
@@ -319,6 +326,113 @@ hl.bind("XF86AudioPlay",  hl.dsp.exec_cmd("playerctl play-pause"), { locked = tr
 hl.bind("XF86AudioPrev",  hl.dsp.exec_cmd("playerctl previous"),   { locked = true }) --hide
 
 
+
+
+
+------------------
+----- PLUGIN -----
+------------------
+
+if hl.plugin.hyprglass then
+
+    local hg = hl.plugin.hyprglass
+
+    hg.config({
+        default_theme = "dark",
+        default_preset = "clear",
+        tint_color = 0x8899aa22,
+
+        brightness = 0.9,
+        dark = { brightness = 0.82 },
+        light = { adaptive_boost = 0.5 },
+
+        layers = { enabled = true },
+    })
+
+    -- Layer surfaces: each call whitelists the namespace and configures it
+    hg.layer("waybar", { preset = "glass", mask_threshold = 0.05 })
+    hg.layer("quickshell:bezel", { preset = "ui", mask_threshold = 0.3 })
+    hg.layer("debug-panel", { exclude = true })
+
+    -- Presets
+    hg.preset("clear", {
+        glass_opacity = 0.8,
+        blur_strength = 1.5,
+        dark = { brightness = 0.7 },
+        light = { brightness = 1.2 },
+    })
+
+    hg.preset("contrasted", {
+        inherits = "high_contrast",
+        contrast = 1.2,
+        adaptive_dim = 1.5,
+        dark = { tint_color = 0x02142aa9 },
+    })
+
+    hg.layer("notifications", { preset = "glass", mask_threshold = 0.05 })
+    hg.layer("hyprlauncher",  { preset = "pomme", mask_threshold = 0.05 })
+end
+
+hl.window_rule({ match = { class = "mpv" },       tag = "+hyprglass_disabled" })
+hl.window_rule({ match = { class = "Emacs"},    tag = "+hyprglass_disabled" })
+hl.window_rule({ match = { fullscreen = true },    tag = "+hyprglass_disabled" })
+hl.window_rule({ match = { class = "firefox" },    tag = "+hyprglass_theme_light" })
+hl.window_rule({ match = { class = "kitty" }, tag = "+hyprglass_preset_high_contrast" })
+
+hl.config({
+    plugin = {
+        hyprexpo = {
+            columns = 3,
+            gaps_in = 5,
+            gaps_out = 0,
+            bg_col = "rgb(111111)",
+            workspace_method = "center current",
+            gesture_distance = 200,
+            cancel_key = "escape",
+            show_cursor = 1,
+            keynav_enable = 1,
+            label_enable = 1,
+            border_width = 2,
+        },
+    },
+})
+hl.define_submap("hyprexpo", function()
+    hl.bind("left",   function() hl.plugin.hyprexpo.kb_focus("left") end)
+    hl.bind("right",  function() hl.plugin.hyprexpo.kb_focus("right") end)
+    hl.bind("up",     function() hl.plugin.hyprexpo.kb_focus("up") end)
+    hl.bind("down",   function() hl.plugin.hyprexpo.kb_focus("down") end)
+    hl.bind("return", function() hl.plugin.hyprexpo.kb_confirm() end)
+    hl.bind("escape", function() hl.plugin.hyprexpo.expo("cancel") end)
+                             end)
+
+if hl.plugin.hyprfocus then
+hl.config({
+    plugin = {
+        hyprfocus = {
+            enable = true,
+            keyboard_focus_animation = "flash",
+            mouse_focus_animation = "shrink",
+            fade_opacity = 0.8,
+            shrink_percentage = 0.99,
+        },
+    },
+})
+end
+
+hl.config({
+    plugin = {
+        borders_plus_plus = {
+            add_borders = 1,
+            natural_rounding = true,
+
+            col = {
+                border_1 = "rgb(ff00c1)",
+            },
+
+            border_size_1 = 1,
+        }
+    }
+})
 --------------------------------
 ---- WINDOWS AND WORKSPACES ----
 --------------------------------
@@ -397,4 +511,22 @@ hl.window_rule({
           title = "gatti",
           },
           float = true,
+})
+
+hl.window_rule({
+    name = "OpenGL",
+    match = {
+          title = "OpenGL",
+          },
+    float = true,
+    center = true,
+})
+
+hl.window_rule({
+    name = "Crak",
+    match = {
+          title = "Crak",
+          },
+    float = true,
+    center = true,
 })
